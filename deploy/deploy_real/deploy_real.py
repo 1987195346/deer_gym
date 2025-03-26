@@ -170,22 +170,32 @@ class Controller:
 
         # create observation
         gravity_orientation = get_gravity_orientation(quat)
+        #当前关节的位置（qj）和速度（dqj）
         qj_obs = self.qj.copy()
         dqj_obs = self.dqj.copy()
         qj_obs = (qj_obs - self.config.default_angles) * self.config.dof_pos_scale
         dqj_obs = dqj_obs * self.config.dof_vel_scale
+        #对IMU测量的角速度（ang_vel）进行缩放处理
         ang_vel = ang_vel * self.config.ang_vel_scale
+
+        #计算机器人控制循环的时间相位（phase）及其对应的正弦（sin_phase）和余弦（cos_phase）值
+        #相位周期设为0.8秒。这有助于策略网络理解时间上的周期性变化，例如步态周期的变化。
         period = 0.8
         count = self.counter * self.config.control_dt
         phase = count % period / period
         sin_phase = np.sin(2 * np.pi * phase)
         cos_phase = np.cos(2 * np.pi * phase)
 
+        #从远程控制器获取命令信息，这里使用的是摇杆的反馈。具体来说，ly、lx、rx分别代表不同的摇杆方向
         self.cmd[0] = self.remote_controller.ly
         self.cmd[1] = self.remote_controller.lx * -1
         self.cmd[2] = self.remote_controller.rx * -1
 
         num_actions = self.config.num_actions
+        #将上述计算得到的所有值整合到一个观测向量（self.obs）中。
+        # 观测向量包含了IMU的角速度、重力方向、命令信息、关节位置、关节速度、上一步的动作以及当前的时间相位（以正弦和余弦值表示）。
+        # [47:168]是地形的观测值
+        # 这些数据将被用作策略网络（self.policy）的输入，策略网络会根据这些观测值来生成下一步的动作。
         self.obs[:3] = ang_vel
         self.obs[3:6] = gravity_orientation
         self.obs[6:9] = self.cmd * self.config.cmd_scale * self.config.max_cmd
@@ -194,6 +204,10 @@ class Controller:
         self.obs[9 + num_actions * 2 : 9 + num_actions * 3] = self.action
         self.obs[9 + num_actions * 3] = sin_phase
         self.obs[9 + num_actions * 3 + 1] = cos_phase
+        # height_measurements
+        self.obs[9 + num_actions * 3 + 2:168] = xxx
+
+
 
         # Get the action from the policy network
         obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
