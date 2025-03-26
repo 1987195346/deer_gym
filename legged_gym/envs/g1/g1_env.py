@@ -28,7 +28,10 @@ class G1Robot(LeggedRobot):
         noise_vec[9+self.num_actions:9+2*self.num_actions] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
         noise_vec[9+2*self.num_actions:9+3*self.num_actions] = 0. # previous actions
         noise_vec[9+3*self.num_actions:9+3*self.num_actions+2] = 0. # sin/cos phase
-        
+        if self.cfg.terrain.measure_heights:
+            #121个点
+            noise_vec[9+3*self.num_actions+2:168] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements # 0.5
+
         return noise_vec
 
     def _init_foot(self):
@@ -89,6 +92,11 @@ class G1Robot(LeggedRobot):
                                     sin_phase,
                                     cos_phase
                                     ),dim=-1)
+
+        # add perceptive inputs if not blind
+        if self.cfg.terrain.measure_heights:
+            heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
+            self.obs_buf = torch.cat((self.obs_buf, heights), dim=-1)
         # add perceptive inputs if not blind
         # add noise if needed
         if self.add_noise:
