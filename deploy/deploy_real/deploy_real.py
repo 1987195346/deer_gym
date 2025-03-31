@@ -205,8 +205,8 @@ class Controller:
         self.obs[9 + num_actions * 3] = sin_phase
         self.obs[9 + num_actions * 3 + 1] = cos_phase
         # height_measurements
-        self.obs[9 + num_actions * 3 + 2:168] = xxx
-
+        if self.height_measurements:
+            self.obs[9 + num_actions * 3 + 2:168] = xxx * self.height_measurements_scale # 高度x缩放
 
 
         # Get the action from the policy network

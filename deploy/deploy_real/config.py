@@ -36,6 +36,8 @@ class Config:
             self.dof_pos_scale = config["dof_pos_scale"]
             self.dof_vel_scale = config["dof_vel_scale"]
             self.action_scale = config["action_scale"]
+            self.height_measurements = config["height_measurements"]
+            self.height_measurements_scale = config["height_measurements_scale"]
             self.cmd_scale = np.array(config["cmd_scale"], dtype=np.float32)
             self.max_cmd = np.array(config["max_cmd"], dtype=np.float32)
 

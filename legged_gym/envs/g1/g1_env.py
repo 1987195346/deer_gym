@@ -31,8 +31,8 @@ class G1Robot(LeggedRobot):
         if self.cfg.terrain.measure_heights:
             #121个点
             noise_vec[9+3*self.num_actions+2:168] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements # 0.5
-
         return noise_vec
+
 
     def _init_foot(self):
         self.feet_num = len(self.feet_indices)
@@ -95,14 +95,19 @@ class G1Robot(LeggedRobot):
 
         # add perceptive inputs if not blind
         if self.cfg.terrain.measure_heights:
-            heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
+            #观察值:   机器人底座高度-地形高度 -base_height_target 
+            #        = 机器人底座相对地形高度-base_height_target 
+            #        = 脚相对于地形的高度
+            #比脚高是负的，比脚低是正的。假设机器人脚在20，地形为10，20，30，则观察值为 10,0,-10
+            #裁剪的张量，下限，上限 这里的高度有self.obs_scales.height_measurements倍缩放
+            heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - self.cfg.rewards.base_height_target - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
             self.obs_buf = torch.cat((self.obs_buf, heights), dim=-1)
         # add perceptive inputs if not blind
         # add noise if needed
         if self.add_noise:
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
 
-        
+
     def _reward_contact(self):
         res = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
         for i in range(self.feet_num):
@@ -112,10 +117,12 @@ class G1Robot(LeggedRobot):
         return res
     
     def _reward_feet_swing_height(self):
+        measured_mean = torch.mean(self.measured_heights, dim=1)
+        feet_height = self.feet_pos[:, :, 2]- measured_mean.unsqueeze(1)
         contact = torch.norm(self.contact_forces[:, self.feet_indices, :3], dim=2) > 1.
-        pos_error = torch.square(self.feet_pos[:, :, 2] - 0.08) * ~contact
+        pos_error = torch.square(feet_height - self.cfg.rewards.feet_height_target) * ~contact
         return torch.sum(pos_error, dim=(1))
-    
+
     def _reward_alive(self):
         # Reward for staying alive
         return 1.0
@@ -129,4 +136,11 @@ class G1Robot(LeggedRobot):
     
     def _reward_hip_pos(self):
         return torch.sum(torch.square(self.dof_pos[:,[1,2,7,8]]), dim=1)
-    
+
+    # 这个函数的作用是计算机器人“不飞行”（即有一个脚部与地面保持接触）的奖励
+    def _reward_no_fly(self):
+        # 获取所有脚部在Z轴方向上的接触力
+        contacts = self.contact_forces[:, self.feet_indices, 2] > 0.1
+        # 判断每个环境中是否只有一个脚部与地面接触，并返回相应的奖励值
+        single_contact = torch.sum(1.*contacts, dim=1)==1
+        return 1.*single_contact

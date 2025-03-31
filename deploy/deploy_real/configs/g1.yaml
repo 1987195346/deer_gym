@@ -35,8 +35,10 @@ ang_vel_scale: 0.25
 dof_pos_scale: 1.0
 dof_vel_scale: 0.05
 action_scale: 0.25
+height_measurements: False   #地形要改这个
+height_measurements_scale: 5.0
 cmd_scale: [2.0, 2.0, 0.25]
 num_actions: 12
-num_obs: 168    #47 + 121 =168, 121是地形的观测值
+num_obs: 121                 #47 + 121 =168, 121是地形的观测值
 
 max_cmd: [0.8, 0.5, 1.57]

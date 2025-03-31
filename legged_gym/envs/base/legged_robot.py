@@ -22,7 +22,7 @@ from .legged_robot_config import LeggedRobotCfg
 class LeggedRobot(BaseTask):
     def __init__(self, cfg: LeggedRobotCfg, sim_params, physics_engine, sim_device, headless):
         """ Parses the provided config file,
-            calls create_sim() (which creates, simulation and environments),
+            calls create_sim() (which creates, simulation, terrain and environments),
             initilizes pytorch buffers used during training
 
         Args:
@@ -317,7 +317,6 @@ class LeggedRobot(BaseTask):
 
         if self.cfg.terrain.measure_heights:
             self.measured_heights = self._get_heights()
- 
 
     def _resample_commands(self, env_ids):
         """ Randommly select commands of some environments
@@ -468,7 +467,7 @@ class LeggedRobot(BaseTask):
         noise_vec[12+self.num_actions:12+2*self.num_actions] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
         noise_vec[12+2*self.num_actions:12+3*self.num_actions] = 0. # previous actions
         if self.cfg.terrain.measure_heights:
-            noise_vec[12+2*self.num_actions:12+3*self.num_actions:235] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements
+            noise_vec[12+3*self.num_actions:235] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements
         return noise_vec
 
     #----------------------------------------
@@ -754,6 +753,7 @@ class LeggedRobot(BaseTask):
                 sphere_pose = gymapi.Transform(gymapi.Vec3(x, y, z), r=None)
                 gymutil.draw_lines(sphere_geom, self.gym, self.viewer, self.envs[i], sphere_pose) 
 
+    #初始化一个Tensor，用于存储在每个环境中测量地形高度的采样点
     def _init_height_points(self):
         """ Returns points at which the height measurments are sampled (in base frame)
 
@@ -768,8 +768,17 @@ class LeggedRobot(BaseTask):
         points = torch.zeros(self.num_envs, self.num_height_points, 3, device=self.device, requires_grad=False)
         points[:, :, 0] = grid_x.flatten()
         points[:, :, 1] = grid_y.flatten()
+        #points是100个三维数组
+        #  [-0.5000, -0.4000,  0.0000],
+        #  [-0.5000, -0.3000,  0.0000],
+        #  ...,
+        #  [ 0.5000,  0.3000,  0.0000],
+        #  [ 0.5000,  0.4000,  0.0000],
+        #  [ 0.5000,  0.5000,  0.0000]
         return points
 
+    #对地形在机器人周围特定点进行采样，以获取这些点的高度值
+    #这个参数用于指定需要返回高度值的环境ID列表。如果这个列表为空，则表示对所有环境进行高度采样
     def _get_heights(self, env_ids=None):
         """ Samples heights of the terrain at required points around each robot.
             The points are offset by the base's position and rotated by the base's yaw
@@ -805,7 +814,6 @@ class LeggedRobot(BaseTask):
         heights3 = self.height_samples[px, py+1]
         heights = torch.min(heights1, heights2)
         heights = torch.min(heights, heights3)
-
         return heights.view(self.num_envs, -1) * self.terrain.cfg.vertical_scale
 
     #------------ reward functions----------------
@@ -822,7 +830,9 @@ class LeggedRobot(BaseTask):
         return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
 
     def _reward_base_height(self):
-        # Penalize base height away from target
+        #机器人底座高度-地形平均高度 = 机器人相对所在地面高度（无论机器人在什么环境，平均高度都可以）
+        # measured_heights_mean = torch.mean(self.measured_heights, dim=1)
+        # base_height = self.root_states[:, 2]- measured_heights_mean 和下面一样
         base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
         return torch.square(base_height - self.cfg.rewards.base_height_target)
     
