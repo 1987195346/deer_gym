@@ -36,7 +36,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         num_rows= 10 # number of terrain rows (levels)
         num_cols = 10 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [1, 0, 0, 0, 0]
+        terrain_proportions = [0.5, 0.5, 0, 0, 0]
 
     class domain_rand(LeggedRobotCfg.domain_rand):
         randomize_friction = True
@@ -104,7 +104,7 @@ class G1RoughCfg( LeggedRobotCfg ):
             # 下面的奖励项是g1中的
             alive = 0.15              #g1new  奖励机器人处于活跃状态
             hip_pos = -1.0            #g1new  惩罚机器人的髋关节当前位置与默认位置的偏差(不清楚是否需要改)，uni是-1
-            contact_no_vel = -0.2     #g1new  惩罚脚无速度接触地面，使学习的更平滑
+            contact_no_vel = -0.2     #g1new  惩罚脚无速度接触地面，使走路更平滑
             feet_swing_height = -0.0  #g1new  惩罚每个脚部在 z 方向上的位置与理想摆动高度的偏差（非水平要改，因为这个高度很难跨越台阶，uni是-20.0）
             contact = 0.18            #g1new  奖励脚部的接触状态与支撑态状态一致情况
             #no_fly = 0.25            #cassie 奖励机器人正好有一个脚在地面上
@@ -126,6 +126,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
         num_steps_per_env = 24 # per iteration
-        max_iterations = 3000
+        max_iterations = 10000
         run_name = ''
         experiment_name = 'g1'
+        save_interval = 1000 # check for potential saves every this many iterations
