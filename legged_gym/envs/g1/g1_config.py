@@ -91,13 +91,13 @@ class G1RoughCfg( LeggedRobotCfg ):
             heading = [-3.14, 3.14]
   
     class rewards( LeggedRobotCfg.rewards ):
-        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        only_positive_rewards = False    # if true negative total rewards are clipped at zero (avoids early termination problems)
         soft_dof_pos_limit = 0.9         # #DOF软限制：设置一个较小的活动范围，以防止 DOF 迅速达到极限，从而提高训练的稳定性
         base_height_target = 0.78        # 目标底座高度
         feet_height_target = 0.08        # 目标抬脚高度
 
         class scales( LeggedRobotCfg.rewards.scales ):
-            termination = -0.0
+            termination = -200.0
             tracking_lin_vel = 1.0
             tracking_ang_vel = 0.5
             lin_vel_z = -0.0          #机器人在Z轴方向上的线性速度进行惩罚（非水平要改），uni是-2，leg是-0.0
