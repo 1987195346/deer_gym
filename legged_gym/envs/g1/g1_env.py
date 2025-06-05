@@ -30,7 +30,7 @@ class G1Robot(LeggedRobot):
         noise_vec[9+3*self.num_actions:9+3*self.num_actions+2] = 0. # sin/cos phase
         if self.cfg.terrain.measure_heights:
             #121个点
-            noise_vec[9+3*self.num_actions+2:168] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements # 0.5
+            noise_vec[9+3*self.num_actions+2:201] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements # 0.5
         return noise_vec
 
 

@@ -79,11 +79,12 @@ def get_load_path(root, load_run=-1, checkpoint=-1):
         last_run = os.path.join(root, runs[-1])
     except:
         raise ValueError("No runs in this directory: " + root)
+    #load_run默认为-1，sort排序后即最新训练的模型，也可指定路径
     if load_run==-1:
         load_run = last_run
     else:
         load_run = os.path.join(root, load_run)
-
+    #checkpoint默认为-1，sort排序后即训练最大轮数的模型
     if checkpoint==-1:
         models = [file for file in os.listdir(load_run) if 'model' in file]
         models.sort(key=lambda m: '{0:0>15}'.format(m))

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <robot name="g1_12dof">
   <mujoco>
     <compiler meshdir="meshes" discardvisual="false"/>
@@ -583,8 +584,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="left_shoulder_pitch_joint" type="fixed">
-    <origin xyz="0.0039563 0.10022 0.24778" rpy="0.27931 5.4949E-05 -0.00019159"/>
+  <joint name="left_shoulder_pitch_joint" type="fixed"> <!-- my 0.30 -->
+    <origin xyz="0.0039563 0.10022 0.24778" rpy="0 0.3 0"/> <!-- rpy="0.27931 5.4949E-05 -0.00019159" -->
     <parent link="torso_link"/>
     <child link="left_shoulder_pitch_link"/>
     <axis xyz="0 1 0"/>
@@ -612,8 +613,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="left_shoulder_roll_joint" type="fixed">
-    <origin xyz="0 0.038 -0.013831" rpy="-0.27925 0 0"/>
+  <joint name="left_shoulder_roll_joint" type="fixed"> <!-- my 0.20 -->
+    <origin xyz="0 0.038 -0.013831" rpy="0.2 0 0"/> <!-- rpy="-0.27925 0 0" -->
     <parent link="left_shoulder_pitch_link"/>
     <child link="left_shoulder_roll_link"/>
     <axis xyz="1 0 0"/>
@@ -670,8 +671,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="left_elbow_joint" type="fixed">
-    <origin xyz="0.015783 0 -0.080518" rpy="0 0 0"/>
+  <joint name="left_elbow_joint" type="fixed"> #<!-- my 0.60 -->
+    <origin xyz="0.015783 0 -0.080518" rpy="0 0.6 0"/> <!-- rpy="0 0 0" -->
     <parent link="left_shoulder_yaw_link"/>
     <child link="left_elbow_link"/>
     <axis xyz="0 1 0"/>
@@ -728,8 +729,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="right_shoulder_pitch_joint" type="fixed">
-    <origin xyz="0.0039563 -0.10021 0.24778" rpy="-0.27931 5.4949E-05 0.00019159"/>
+  <joint name="right_shoulder_pitch_joint" type="fixed"> <!-- my 0.30 -->
+    <origin xyz="0.0039563 -0.10021 0.24778" rpy="0 0.3 0"/> <!-- rpy="-0.27931 5.4949E-05 0.00019159" -->
     <parent link="torso_link"/>
     <child link="right_shoulder_pitch_link"/>
     <axis xyz="0 1 0"/>
@@ -757,8 +758,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="right_shoulder_roll_joint" type="fixed">
-    <origin xyz="0 -0.038 -0.013831" rpy="0.27925 0 0"/>
+  <joint name="right_shoulder_roll_joint" type="fixed"> <!-- my -0.20 -->
+    <origin xyz="0 -0.038 -0.013831" rpy="-0.2 0 0"/> <!-- rpy="0.27925 0 0" -->
     <parent link="right_shoulder_pitch_link"/>
     <child link="right_shoulder_roll_link"/>
     <axis xyz="1 0 0"/>
@@ -815,8 +816,8 @@
       </geometry>
     </collision>
   </link>
-  <joint name="right_elbow_joint" type="fixed">
-    <origin xyz="0.015783 0 -0.080518" rpy="0 0 0"/>
+  <joint name="right_elbow_joint" type="fixed"> <!-- my 0.60 -->
+    <origin xyz="0.015783 0 -0.080518" rpy="0 0.6 0"/> <!-- rpy="0 0 0" -->
     <parent link="right_shoulder_yaw_link"/>
     <child link="right_elbow_link"/>
     <axis xyz="0 1 0"/>

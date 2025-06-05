@@ -21,7 +21,7 @@ class G1RoughCfg( LeggedRobotCfg ):
     
     class env(LeggedRobotCfg.env):
         num_envs = 4096
-        num_observations = 168    # 47 + 121 = 168, 121是地形的观测点
+        num_observations = 201    # 47 + 154 = 201, 154是地形的观测点
         num_privileged_obs = 50
         num_actions = 12
 
@@ -31,12 +31,12 @@ class G1RoughCfg( LeggedRobotCfg ):
         # rough terrain only:
         measure_heights = True
         #11 x 11 = 121 points
-        measured_points_x = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5] # 1mx1m rectangle (without center line)
-        measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]
+        measured_points_x = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] # 1.4mx1m rectangle (without center line)
+        measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]      #14 x 11 = 154 points
         num_rows= 10 # number of terrain rows (levels)
         num_cols = 10 # number of terrain cols (types)
         # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [0.1, 0.2, 0.3, 0.3, 0.1]
+        terrain_proportions = [0.2, 0.2, 0.2, 0.2, 0.2]
 
     class domain_rand(LeggedRobotCfg.domain_rand):
         randomize_friction = True
@@ -85,10 +85,10 @@ class G1RoughCfg( LeggedRobotCfg ):
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
         class ranges:
-            lin_vel_x = [-1.0, 1.0] # min max [m/s]
-            lin_vel_y = [-1.0, 1.0]   # min max [m/s]
-            ang_vel_yaw = [-1, 1]    # min max [rad/s]
-            heading = [-3.14, 3.14]
+            lin_vel_x = [0.5, 0.5] # min max [m/s]
+            lin_vel_y = [0.0, 0.0]   # min max [m/s]
+            ang_vel_yaw = [0, 0]    # min max [rad/s] #偏航角速度
+            heading = [0, 0]   #朝向
   
     class rewards( LeggedRobotCfg.rewards ):
         only_positive_rewards = False    # if true negative total rewards are clipped at zero (avoids early termination problems)
@@ -99,27 +99,27 @@ class G1RoughCfg( LeggedRobotCfg ):
         class scales( LeggedRobotCfg.rewards.scales ):
             termination = -200.0
             tracking_lin_vel = 1.0
-            tracking_ang_vel = 0.5
-            lin_vel_z = -0.0          #机器人在Z轴方向上的线性速度进行惩罚（非水平要改），uni是-2，leg是-0.0
-            ang_vel_xy = -0.05
-            orientation = -0.1        #惩罚机器人基础姿态（即机器人身体的朝向）偏离平坦的情况（非水平需要改），uni是-1，leg是-0.1
+            tracking_ang_vel = 0.5   #奖励机器人在 z 轴上的角速度跟踪行为，从而减少不必要的旋转。
+            lin_vel_z = -2.0         #机器人在Z轴方向上的线性速度进行惩罚（跳跃要改），uni是-2
+            ang_vel_xy = -0.5        #该函数通过对角速度平方求和，惩罚机器人在 x 和 y 轴上的旋转运动(避免倾斜或侧翻），uni是-0.05
+            orientation = -1.0       #惩罚机器人基础姿态（即机器人身体的朝向）偏离平坦的情况，uni是-1
             torques = -0.00001
-            dof_vel = -1e-3           #惩罚关节速度，防止运动过快，uni是-1e-3，leg是0
+            dof_vel = -1e-3          #惩罚关节速度，防止运动过快，uni是-1e-3
             dof_acc = -2.5e-7
-            base_height = -0.0       #惩罚底座高度和目标底座高度差异（非水平可以改），uni是-10，leg是-0
-            feet_air_time = 0.0       #对机器人脚部在空中的时间进行奖励,鼓励迈大步，uni是0，leg是5.0
-            collision = -1.0           #惩罚机器人与环境中的物体发生碰撞，uni是0，leg是-1
+            base_height = -0.0       #惩罚底座高度和目标底座高度差异（非水平要改为0），uni是-10，leg是-0
+            feet_air_time = 5.0      #对机器人脚部在空中的时间进行奖励,鼓励迈大步，uni是0，leg是5.0
+            collision = -1.0         #惩罚机器人与环境中的物体发生碰撞
             feet_stumble = -0.0 
             action_rate = -0.01
             stand_still = -0.
-            dof_pos_limits = -5.0     #对接近关节位置极限的情况进行惩罚uni是-5，leg是-1
+            dof_pos_limits = -5.0    #对接近关节位置极限的情况进行惩罚，uni是-5
             # 下面的奖励项是g1中的
-            alive = 0.15              #g1new  奖励机器人处于活跃状态
-            hip_pos = -1.0            #g1new  惩罚机器人的髋关节当前位置与默认位置的偏差(不清楚是否需要改)，uni是-1
-            contact_no_vel = -0.2     #g1new  惩罚脚无速度接触地面，使走路更平滑
-            feet_swing_height = -0.0  #g1new  惩罚每个脚部在 z 方向上的位置与理想摆动高度的偏差（非水平要改，因为这个高度很难跨越台阶，uni是-20.0）
-            contact = 0.18            #g1new  奖励脚部的接触状态与支撑态状态一致情况
-            no_fly = 0.25            #cassie 奖励机器人正好有一个脚在地面上
+            alive = 0.15             #奖励机器人处于活跃状态
+            hip_pos = -1.0           #惩罚机器人的髋关节当前位置与默认位置的偏差，uni是-1（跟踪了两个髋关节，防止腿旋转）
+            contact_no_vel = -0.2    #惩罚脚无速度接触地面，使走路更平滑
+            feet_swing_height = -0.0 #惩罚每个脚部在 z 方向上的位置与理想摆动高度的偏差（非水平要改为0），uni是-20.0，leg是-0
+            contact = 0.18           #奖励脚部的接触状态与支撑态状态一致情况
+            no_fly = 0.25            #奖励机器人正好有一个脚在地面上，防止下楼飞行
 
 class G1RoughCfgPPO( LeggedRobotCfgPPO ):
     class policy:
@@ -138,7 +138,7 @@ class G1RoughCfgPPO( LeggedRobotCfgPPO ):
         policy_class_name = 'ActorCritic'
         algorithm_class_name = 'PPO'
         num_steps_per_env = 24 # per iteration
-        max_iterations = 5000
+        max_iterations = 10000
         run_name = ''
         experiment_name = 'g1'
         save_interval = 1000 # check for potential saves every this many iterations
