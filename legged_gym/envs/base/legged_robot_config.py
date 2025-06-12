@@ -2,40 +2,87 @@ from .base_config import BaseConfig
 
 class LeggedRobotCfg(BaseConfig):
     class env:
-        num_envs = 4096
-        num_observations = 235 # 48 + 187, 187是地形的观测值
+        num_envs = 6144
+        num_observations = 204    # 50 + 154 = 204, 154是地形的观测点
         num_privileged_obs = None # if not None a priviledge_obs_buf will be returned by step() (critic obs for assymetric training). None is returned otherwise 
         num_actions = 12
+        
         env_spacing = 3.  # not used with heightfields/trimeshes 
         send_timeouts = True # send time out information to the algorithm
         episode_length_s = 20 # episode length in seconds
         test = False
 
+        next_goal_threshold = 0.2
+        reach_goal_delay = 0.1
+        num_future_goal_obs = 2
+
     class terrain:
         mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
-        horizontal_scale = 0.1 # [m]
+        hf2mesh_method = "grid"  # grid or fast
+        max_error = 0.1 # for fast
+        max_error_camera = 2
+
+        y_range = [-0.4, 0.4]
+        
+        edge_width_thresh = 0.05
+        horizontal_scale = 0.05 # [m] influence computation time by a lot
+        horizontal_scale_camera = 0.1
         vertical_scale = 0.005 # [m]
-        border_size = 25 # [m]
-        curriculum = False  #地形课程学习如果打开，机器人重置后会放在最左边的地面
+        border_size = 5 # [m]
+        height = [0.02, 0.06]
+        simplify_grid = False
+        gap_size = [0.02, 0.1]
+        stepping_stone_distance = [0.02, 0.08]
+        downsampled_scale = 0.075
+        curriculum = True
+
+        all_vertical = False
+        no_flat = True
+        
         static_friction = 1.0
         dynamic_friction = 1.0
         restitution = 0.
-        # rough terrain only:
         measure_heights = True
-        #17 x 11 = 187 points
-        measured_points_x = [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] # 1mx1.6m rectangle (without center line)
-        measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]
+        # 14 x 11 = 154 points
+        measured_points_x = [-0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5] # 1mx1.9m rectangle (without center line)
+        measured_points_y = [-0.75, -0.6, -0.45, -0.3, -0.15, 0., 0.15, 0.3, 0.45, 0.6, 0.75]
+        measure_horizontal_noise = 0.0
+
         selected = False # select a unique terrain type and pass all arguments
         terrain_kwargs = None # Dict of arguments for selected terrain
         max_init_terrain_level = 5 # starting curriculum state
-        terrain_length = 8.
-        terrain_width = 8.
-        num_rows= 10 # number of terrain rows (levels)
-        num_cols = 10 # number of terrain cols (types)
-        # terrain types: [smooth slope, rough slope, stairs up, stairs down, discrete]
-        terrain_proportions = [0.1, 0.1, 0.35, 0.35, 0.1]
+        terrain_length = 18.
+        terrain_width = 4
+        num_rows= 10 # number of terrain rows (levels)  # spreaded is benifitiall !
+        num_cols = 40 # number of terrain cols (types)
+        
+        terrain_dict = {"smooth slope": 0., 
+                        "rough slope up": 0.0,
+                        "rough slope down": 0.0,
+                        "rough stairs up": 0.,
+                        "rough stairs down": 0.,
+                        "discrete": 0.,
+                        "stepping stones": 0.0,
+                        "gaps": 0.,
+                        "smooth flat": 0,
+                        "pit": 0.0,
+                        "wall": 0.0,
+                        "platform": 0.,
+                        "large stairs up": 0.,
+                        "large stairs down": 0.,
+                        "parkour": 0.2,
+                        "parkour_hurdle": 0.2,
+                        "parkour_flat": 0.2,
+                        "parkour_step": 0.2,
+                        "parkour_gap": 0.2,
+                        "demo": 0.0,}
+        terrain_proportions = list(terrain_dict.values())
+        
         # trimesh only:
-        slope_treshold = 0.75 # slopes above this threshold will be corrected to vertical surfaces
+        slope_treshold = 1.5# slopes above this threshold will be corrected to vertical surfaces
+        origin_zero_z = True
+
+        num_goals = 8
 
     class commands:
         curriculum = False
@@ -44,10 +91,10 @@ class LeggedRobotCfg(BaseConfig):
         resampling_time = 10. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
         class ranges:
-            lin_vel_x = [-1.0, 1.0] # min max [m/s]
-            lin_vel_y = [-1.0, 1.0]   # min max [m/s]
-            ang_vel_yaw = [-1, 1]    # min max [rad/s]
-            heading = [-3.14, 3.14]
+            lin_vel_x = [0.3, 0.8] # min max [m/s]
+            lin_vel_y = [-0.3, 0.3]#[0.15, 0.6]   # min max [m/s]
+            ang_vel_yaw = [-0, 0]    # min max [rad/s] ##偏航角速度
+            heading = [-1.6, 1.6]  #朝向
 
     class init_state:
         pos = [0.0, 0.0, 1.] # x,y,z [m]
@@ -92,12 +139,12 @@ class LeggedRobotCfg(BaseConfig):
 
     class domain_rand:
         randomize_friction = True
-        friction_range = [0.5, 1.25]
-        randomize_base_mass = False
-        added_mass_range = [-1., 1.]
+        friction_range = [0.6, 2.0]
+        randomize_base_mass = True
+        added_mass_range = [0., 3.]
         push_robots = True
-        push_interval_s = 15
-        max_push_vel_xy = 1.
+        push_interval_s = 8
+        max_push_vel_xy = 0.5
 
     class rewards:
         class scales:
@@ -124,6 +171,9 @@ class LeggedRobotCfg(BaseConfig):
         soft_torque_limit = 1.
         base_height_target = 1.
         max_contact_force = 100. # forces above this value are penalized
+
+    class depth:
+        use_camera = False
 
     class normalization:
         class obs_scales:
